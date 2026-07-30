@@ -9,6 +9,7 @@ import com.movieverse.backend.enums.Role;
 import com.movieverse.backend.exception.InvalidCredentialsException;
 import com.movieverse.backend.exception.UserAlreadyExistsException;
 import com.movieverse.backend.repository.UserRepository;
+import com.movieverse.backend.security.JwtService;
 import com.movieverse.backend.service.UserService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,12 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder){
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtService jwtService){
         this.userRepository=userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService=jwtService;
     }
 
     @Override
@@ -60,8 +63,10 @@ public class UserServiceImpl implements UserService {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
+        String token = jwtService.generateToken(user.getEmail());
+
         return LoginResponse.builder()
-                .token("")
+                .token(token)
                 .message("Login successful")
                 .build();
     }
