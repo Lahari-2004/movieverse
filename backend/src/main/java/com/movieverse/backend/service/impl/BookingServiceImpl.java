@@ -8,7 +8,9 @@ import com.movieverse.backend.entity.Seat;
 import com.movieverse.backend.entity.Show;
 import com.movieverse.backend.entity.User;
 import com.movieverse.backend.enums.BookingStatus;
+import com.movieverse.backend.exception.BookingException;
 import com.movieverse.backend.exception.ResourceNotFoundException;
+import com.movieverse.backend.exception.UnauthorizedException;
 import com.movieverse.backend.repository.BookingRepository;
 import com.movieverse.backend.repository.BookingSeatRepository;
 import com.movieverse.backend.repository.SeatRepository;
@@ -37,7 +39,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponse createBooking(BookingRequest request) {
 
-        // Get currently logged-in user
+        // Get logged-in user from JWT
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -52,7 +54,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Show not found"));
 
-        // Find requested seats
+        // Find and validate seats
         List<Seat> seats = new ArrayList<>();
 
         for (Long seatId : request.getSeatIds()) {
@@ -63,22 +65,24 @@ public class BookingServiceImpl implements BookingService {
                                     "Seat not found: " + seatId
                             ));
 
-            // Make sure seat belongs to the show's screen
+            // Check whether seat belongs to the show's screen
             if (!seat.getScreen().getId()
                     .equals(show.getScreen().getId())) {
 
-                throw new IllegalArgumentException(
+                throw new BookingException(
                         "Seat " + seat.getSeatNumber()
                                 + " does not belong to the show's screen"
                 );
             }
 
             // Check whether seat is already booked for this show
-            if (bookingSeatRepository.existsByBookingShowIdAndSeatId(
-                    show.getId(),
-                    seat.getId())) {
+            if (bookingSeatRepository
+                    .existsByBookingShowIdAndSeatIdAndBookingStatusNot(
+                            show.getId(),
+                            seat.getId(),
+                            BookingStatus.CANCELLED)) {
 
-                throw new IllegalArgumentException(
+                throw new BookingException(
                         "Seat " + seat.getSeatNumber()
                                 + " is already booked"
                 );
@@ -88,8 +92,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // Calculate total amount
-        double totalAmount =
-                seats.size() * show.getTicketPrice();
+        double totalAmount = seats.stream()
+                .mapToDouble(Seat::getPrice)
+                .sum();
 
         // Create booking
         Booking booking = Booking.builder()
@@ -100,7 +105,8 @@ public class BookingServiceImpl implements BookingService {
                 .bookedAt(LocalDateTime.now())
                 .build();
 
-        Booking savedBooking = bookingRepository.save(booking);
+        Booking savedBooking =
+                bookingRepository.save(booking);
 
         // Create BookingSeat records
         for (Seat seat : seats) {
@@ -150,10 +156,10 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Booking not found"));
 
-        // User can only access their own booking
+        // Make sure the booking belongs to the logged-in user
         if (!booking.getUser().getId().equals(user.getId())) {
 
-            throw new IllegalArgumentException(
+            throw new UnauthorizedException(
                     "You are not authorized to access this booking"
             );
         }
@@ -177,11 +183,19 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Booking not found"));
 
-        // Only owner can cancel
+        // Make sure the booking belongs to the logged-in user
         if (!booking.getUser().getId().equals(user.getId())) {
 
-            throw new IllegalArgumentException(
+            throw new UnauthorizedException(
                     "You are not authorized to cancel this booking"
+            );
+        }
+
+        // Check if already cancelled
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+
+            throw new BookingException(
+                    "Booking is already cancelled"
             );
         }
 
@@ -190,25 +204,27 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
+    /**
+     * Convert Booking entity to BookingResponse
+     */
     private BookingResponse mapToResponse(Booking booking) {
 
         List<BookingSeat> bookingSeats =
-                bookingSeatRepository.findByBookingId(booking.getId());
+                bookingSeatRepository.findByBookingId(
+                        booking.getId()
+                );
 
-        List<String> seatNumbers = bookingSeats
+        List<Seat> seats = bookingSeats
                 .stream()
-                .map(bookingSeat ->
-                        bookingSeat.getSeat().getSeatNumber())
+                .map(BookingSeat::getSeat)
                 .toList();
 
-        return mapToResponse(
-                booking,
-                bookingSeats.stream()
-                        .map(BookingSeat::getSeat)
-                        .toList()
-        );
+        return mapToResponse(booking, seats);
     }
 
+    /**
+     * Convert Booking + Seats to BookingResponse
+     */
     private BookingResponse mapToResponse(
             Booking booking,
             List<Seat> seats) {

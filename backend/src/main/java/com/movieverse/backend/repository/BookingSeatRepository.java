@@ -9,8 +9,9 @@ public interface BookingSeatRepository extends JpaRepository<BookingSeat, Long> 
 
     List<BookingSeat> findByBookingId(Long bookingId);
 
-    boolean existsByBookingShowIdAndSeatId(
+    boolean existsByBookingShowIdAndSeatIdAndBookingStatusNot(
             Long showId,
-            Long seatId
+            Long seatId,
+            com.movieverse.backend.enums.BookingStatus status
     );
 }
