@@ -19,15 +19,23 @@ public class MovieController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public MovieResponse addMovie(
+    public MovieResponse createMovie(
             @Valid @RequestBody MovieRequest request
     ) {
-        return movieService.addMovie(request);
+        return movieService.createMovie(request);
     }
 
     @GetMapping
     public List<MovieResponse> getAllMovies() {
+
         return movieService.getAllMovies();
+    }
+
+    @GetMapping("/search")
+    public List<MovieResponse> searchMovies(
+            @RequestParam String title
+    ) {
+        return movieService.searchMovies(title);
     }
 
     @GetMapping("/{id}")
@@ -51,5 +59,19 @@ public class MovieController {
             @PathVariable Long id
     ) {
         movieService.deleteMovie(id);
+    }
+
+    @GetMapping("/genre/{genre}")
+    public List<MovieResponse> getMoviesByGenre(
+            @PathVariable String genre
+    ) {
+        return movieService.getMoviesByGenre(genre);
+    }
+
+    @GetMapping("/language/{language}")
+    public List<MovieResponse> getMoviesByLanguage(
+            @PathVariable String language
+    ) {
+        return movieService.getMoviesByLanguage(language);
     }
 }

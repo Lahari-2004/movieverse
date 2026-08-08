@@ -1,6 +1,7 @@
 package com.movieverse.backend.dto;
 
 import com.movieverse.backend.enums.BookingStatus;
+import com.movieverse.backend.enums.PaymentStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -36,4 +37,10 @@ public class BookingResponse {
     private BookingStatus status;
 
     private LocalDateTime bookedAt;
+
+    private PaymentStatus paymentStatus;
+
+    private String paymentMethod;
+
+    private String transactionId;
 }

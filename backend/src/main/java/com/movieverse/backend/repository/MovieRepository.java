@@ -7,9 +7,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface MovieRepository extends JpaRepository<Movie,Long> {
+public interface MovieRepository extends JpaRepository<Movie, Long> {
+
     List<Movie> findByGenre(String genre);
+
     List<Movie> findByLanguage(String language);
+
     List<Movie> findByTitleContainingIgnoreCase(String title);
-    
 }

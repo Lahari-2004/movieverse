@@ -6,7 +6,8 @@ import com.movieverse.backend.dto.MovieResponse;
 import java.util.List;
 
 public interface MovieService {
-    MovieResponse addMovie(MovieRequest request);
+
+    MovieResponse createMovie(MovieRequest request);
 
     List<MovieResponse> getAllMovies();
 
@@ -15,4 +16,10 @@ public interface MovieService {
     MovieResponse updateMovie(Long id, MovieRequest request);
 
     void deleteMovie(Long id);
+
+    List<MovieResponse> searchMovies(String title);
+
+    List<MovieResponse> getMoviesByGenre(String genre);
+
+    List<MovieResponse> getMoviesByLanguage(String language);
 }

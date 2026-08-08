@@ -18,7 +18,7 @@ public class MovieServiceImpl implements MovieService {
     private final MovieRepository movieRepository;
 
     @Override
-    public MovieResponse addMovie(MovieRequest request) {
+    public MovieResponse createMovie(MovieRequest request) {
 
         Movie movie = Movie.builder()
                 .title(request.getTitle())
@@ -34,18 +34,7 @@ public class MovieServiceImpl implements MovieService {
 
         Movie savedMovie = movieRepository.save(movie);
 
-        return MovieResponse.builder()
-                .id(savedMovie.getId())
-                .title(savedMovie.getTitle())
-                .description(savedMovie.getDescription())
-                .genre(savedMovie.getGenre())
-                .language(savedMovie.getLanguage())
-                .duration(savedMovie.getDuration())
-                .releaseDate(savedMovie.getReleaseDate())
-                .posterUrl(savedMovie.getPosterUrl())
-                .trailerUrl(savedMovie.getTrailerUrl())
-                .rating(savedMovie.getRating())
-                .build();
+        return mapToResponse(savedMovie);
     }
 
     @Override
@@ -53,27 +42,74 @@ public class MovieServiceImpl implements MovieService {
 
         return movieRepository.findAll()
                 .stream()
-                .map(movie -> MovieResponse.builder()
-                        .id(movie.getId())
-                        .title(movie.getTitle())
-                        .description(movie.getDescription())
-                        .genre(movie.getGenre())
-                        .language(movie.getLanguage())
-                        .duration(movie.getDuration())
-                        .releaseDate(movie.getReleaseDate())
-                        .posterUrl(movie.getPosterUrl())
-                        .trailerUrl(movie.getTrailerUrl())
-                        .rating(movie.getRating())
-                        .build())
+                .map(this::mapToResponse)
                 .toList();
     }
 
     @Override
     public MovieResponse getMovieById(Long id) {
 
-        Movie movie = movieRepository.findById(id).orElseThrow(()->
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() ->
+                        new MovieNotFoundException(
+                                "Movie not found with id: " + id
+                        )
+                );
 
-                new MovieNotFoundException("Movie not found with id : " + id));
+        return mapToResponse(movie);
+    }
+
+    @Override
+    public MovieResponse updateMovie(
+            Long id,
+            MovieRequest request) {
+
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() ->
+                        new MovieNotFoundException(
+                                "Movie not found with id: " + id
+                        )
+                );
+
+        movie.setTitle(request.getTitle());
+        movie.setDescription(request.getDescription());
+        movie.setGenre(request.getGenre());
+        movie.setLanguage(request.getLanguage());
+        movie.setDuration(request.getDuration());
+        movie.setReleaseDate(request.getReleaseDate());
+        movie.setPosterUrl(request.getPosterUrl());
+        movie.setTrailerUrl(request.getTrailerUrl());
+        movie.setRating(request.getRating());
+
+        Movie updatedMovie = movieRepository.save(movie);
+
+        return mapToResponse(updatedMovie);
+    }
+
+    @Override
+    public void deleteMovie(Long id) {
+
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() ->
+                        new MovieNotFoundException(
+                                "Movie not found with id: " + id
+                        )
+                );
+
+        movieRepository.delete(movie);
+    }
+
+    @Override
+    public List<MovieResponse> searchMovies(String title) {
+
+        return movieRepository
+                .findByTitleContainingIgnoreCase(title)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private MovieResponse mapToResponse(Movie movie) {
 
         return MovieResponse.builder()
                 .id(movie.getId())
@@ -90,45 +126,20 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieResponse updateMovie(Long id, MovieRequest request) {
+    public List<MovieResponse> getMoviesByGenre(String genre) {
 
-        Movie movie = movieRepository.findById(id)
-                .orElseThrow(() ->
-                        new MovieNotFoundException("Movie not found with id: " + id));
-
-        movie.setTitle(request.getTitle());
-        movie.setDescription(request.getDescription());
-        movie.setGenre(request.getGenre());
-        movie.setLanguage(request.getLanguage());
-        movie.setDuration(request.getDuration());
-        movie.setReleaseDate(request.getReleaseDate());
-        movie.setPosterUrl(request.getPosterUrl());
-        movie.setTrailerUrl(request.getTrailerUrl());
-        movie.setRating(request.getRating());
-
-        Movie updatedMovie = movieRepository.save(movie);
-
-        return MovieResponse.builder()
-                .id(updatedMovie.getId())
-                .title(updatedMovie.getTitle())
-                .description(updatedMovie.getDescription())
-                .genre(updatedMovie.getGenre())
-                .language(updatedMovie.getLanguage())
-                .duration(updatedMovie.getDuration())
-                .releaseDate(updatedMovie.getReleaseDate())
-                .posterUrl(updatedMovie.getPosterUrl())
-                .trailerUrl(updatedMovie.getTrailerUrl())
-                .rating(updatedMovie.getRating())
-                .build();
+        return movieRepository.findByGenre(genre)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     @Override
-    public void deleteMovie(Long id) {
+    public List<MovieResponse> getMoviesByLanguage(String language) {
 
-        Movie movie = movieRepository.findById(id)
-                .orElseThrow(() ->
-                        new MovieNotFoundException("Movie not found with id: " + id));
-
-        movieRepository.delete(movie);
+        return movieRepository.findByLanguage(language)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 }

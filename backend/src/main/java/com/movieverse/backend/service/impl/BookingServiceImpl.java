@@ -2,20 +2,12 @@ package com.movieverse.backend.service.impl;
 
 import com.movieverse.backend.dto.BookingRequest;
 import com.movieverse.backend.dto.BookingResponse;
-import com.movieverse.backend.entity.Booking;
-import com.movieverse.backend.entity.BookingSeat;
-import com.movieverse.backend.entity.Seat;
-import com.movieverse.backend.entity.Show;
-import com.movieverse.backend.entity.User;
+import com.movieverse.backend.entity.*;
 import com.movieverse.backend.enums.BookingStatus;
 import com.movieverse.backend.exception.BookingException;
 import com.movieverse.backend.exception.ResourceNotFoundException;
 import com.movieverse.backend.exception.UnauthorizedException;
-import com.movieverse.backend.repository.BookingRepository;
-import com.movieverse.backend.repository.BookingSeatRepository;
-import com.movieverse.backend.repository.SeatRepository;
-import com.movieverse.backend.repository.ShowRepository;
-import com.movieverse.backend.repository.UserRepository;
+import com.movieverse.backend.repository.*;
 import com.movieverse.backend.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -36,6 +28,7 @@ public class BookingServiceImpl implements BookingService {
     private final SeatRepository seatRepository;
     private final ShowRepository showRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
 
     @Override
     @Transactional
@@ -233,9 +226,12 @@ public class BookingServiceImpl implements BookingService {
 
         Show show = booking.getShow();
 
+        Payment payment = paymentRepository
+                .findByBookingId(booking.getId())
+                .orElse(null);
+
         return BookingResponse.builder()
                 .id(booking.getId())
-
                 .userId(booking.getUser().getId())
 
                 .showId(show.getId())
@@ -260,6 +256,24 @@ public class BookingServiceImpl implements BookingService {
                 .status(booking.getStatus())
 
                 .bookedAt(booking.getBookedAt())
+
+                .paymentStatus(
+                        payment != null
+                                ? payment.getStatus()
+                                : null
+                )
+
+                .paymentMethod(
+                        payment != null
+                                ? payment.getPaymentMethod()
+                                : null
+                )
+
+                .transactionId(
+                        payment != null
+                                ? payment.getTransactionId()
+                                : null
+                )
 
                 .build();
     }
