@@ -103,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
                 .user(user)
                 .show(show)
                 .totalAmount(totalAmount)
-                .status(BookingStatus.CONFIRMED)
+                .status(BookingStatus.PENDING)
                 .bookedAt(LocalDateTime.now())
                 .build();
 
