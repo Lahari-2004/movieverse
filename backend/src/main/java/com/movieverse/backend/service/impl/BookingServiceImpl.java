@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public BookingResponse createBooking(BookingRequest request) {
 
         // Get logged-in user from JWT
@@ -59,7 +61,7 @@ public class BookingServiceImpl implements BookingService {
 
         for (Long seatId : request.getSeatIds()) {
 
-            Seat seat = seatRepository.findById(seatId)
+            Seat seat = seatRepository.findByIdForUpdate(seatId)
                     .orElseThrow(() ->
                             new ResourceNotFoundException(
                                     "Seat not found: " + seatId
