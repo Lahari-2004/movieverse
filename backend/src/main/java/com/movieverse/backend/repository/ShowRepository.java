@@ -12,4 +12,6 @@ public interface ShowRepository extends JpaRepository<Show, Long> {
     List<Show> findByTheatreId(Long theatreId);
 
     List<Show> findByScreenId(Long screenId);
+
+    
 }
